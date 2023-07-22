@@ -186,7 +186,7 @@ const getDoctors = asyncHandler( async (req, res) => {
         var page = req.query.page ? Number(req.query.page) - 1 : 0
         page = page * perPage;
         const doctors = await User.findAndCountAll({
-            attributes: ['id', 'first_name', 'last_name', 'profile_picture', 'email', 'mobile_number', 'gender', 'blood_group', 'qualification', 'doc_category', 'address', 'createdAt', 'updatedAt', 'deletedAt'],
+            attributes: ['id', 'first_name', 'last_name', 'profile_picture', 'email', 'mobile_number', 'gender', 'user_type', 'blood_group', 'qualification', 'doc_category', 'address', 'createdAt', 'updatedAt', 'deletedAt'],
             include: [{
                 model: Qualifications,
                 required: true, //to make inner join
