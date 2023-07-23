@@ -113,7 +113,7 @@ const uploadProfilePic = asyncHandler( async (req, res) => {
 const addDoctor = asyncHandler (async (req, res) => {
     const t = await db.sequelize.transaction();
     try {
-        const { first_name, last_name, email, password, mobile_number, gender, blood_group, qualification, doc_category, address } = req.body;
+        const { first_name, last_name, email, password, cpassword, mobile_number, gender, blood_group, qualification, doc_category, address } = req.body;
         if( !first_name || !last_name || !email || !password || !mobile_number || !gender || !qualification || !doc_category ) {
             res.status(400);
             if( !first_name ) {
@@ -153,6 +153,10 @@ const addDoctor = asyncHandler (async (req, res) => {
             res.status(400);
             throw new Error('Password length should not be less than 10 characters');
         }
+        if( password !== cpassword ) {
+            res.status(400);
+            throw new Error('Password and confirm password does not match');
+        }
         if( mobile_number.toString().length !== 10 || isNaN(mobile_number) ) {
             res.status(400);
             throw new Error('Invalid Mobile number');
@@ -169,7 +173,7 @@ const addDoctor = asyncHandler (async (req, res) => {
         const doctor = await User.create(postData);
         doctor.setDataValue('password', null);
         t.commit();
-        res.status(201).json({ status: true, message: 'Doctor created successfully', data: doctor });
+        res.status(201).json({ status: true, message: 'Doctor added successfully', data: doctor });
     } catch(err) {
         t.rollback();
         throw new Error(err);
