@@ -2,6 +2,7 @@ const asyncHandler = require('express-async-handler');
 const bcrypt  = require('bcrypt');
 const helperFunctions = require('../helper/helperFunctions');
 const db = require('../models/index');
+const { Op } = db.Sequelize;
 const constants = require('../constants/constants');
 const BloodGroups = db.BloodGroups;
 const Gender = db.Gender;
@@ -189,6 +190,20 @@ const getDoctors = asyncHandler( async (req, res) => {
         const perPage = Number(req.query.per_page);
         var page = req.query.page ? Number(req.query.page) - 1 : 0
         page = page * perPage;
+        var whereCond = {};
+        const searchQuery = req.query.search_query;
+        if( searchQuery ) {
+            whereCond = {
+                [Op.or] : [
+                    { first_name : {[Op.like] : `%${searchQuery}%`} },
+                    { last_name : {[Op.like] : `%${searchQuery}%`} },
+                    { email : {[Op.like] : `%${searchQuery}%`} },
+                    { mobile_number : {[Op.like] : `%${searchQuery}%`} }
+                ]
+            }
+        }
+        whereCond.user_type = constants.userType.DOCTOR;
+        whereCond.is_admin = 0;
         const doctors = await User.findAndCountAll({
             attributes: ['id', 'first_name', 'last_name', 'profile_picture', 'email', 'mobile_number', 'gender', 'user_type', 'blood_group', 'qualification', 'doc_category', 'address', 'createdAt', 'updatedAt', 'deletedAt'],
             include: [{
@@ -202,10 +217,7 @@ const getDoctors = asyncHandler( async (req, res) => {
                 as: 'doctorCategoryDetails',
                 attributes: ['id', 'key', 'value']
             }],
-            where: {
-                user_type: constants.userType.DOCTOR,
-                is_admin: 0
-            },
+            where: whereCond,
             order: [
                 ['id', 'DESC']
             ],
