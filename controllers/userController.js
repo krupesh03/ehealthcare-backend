@@ -482,7 +482,48 @@ const addPatient = asyncHandler( async (req, res) => {
  * @route GET /api/v1/user/patient
  * @desc api to add patient
  */
-//const getPatients 
+const getPatients = asyncHandler( async (req, res) => {
+
+    try {
+        const perPage = Number(req.query.per_page);
+        var page = req.query.page ? Number(req.query.page) - 1 : 0;
+        page = perPage * page;
+        const searchQuery = req.query.search_query;
+        var whereCond = {};
+        if ( searchQuery ) {
+            whereCond = {
+                [Op.or] : [
+                    { first_name : { [Op.like] : `%${searchQuery}%` } },
+                    { last_name : { [Op.like] : `%${searchQuery}%` } },
+                    { email : { [Op.like] : `%${searchQuery}%` } },
+                    { mobile_number : { [Op.like] : `%${searchQuery}%` } }
+                ]
+            }
+        }
+        whereCond.user_type = constants.userType.PATIENT;
+        whereCond.is_admin = 0;
+        const patients = await User.findAndCountAll({
+            attributes: { exclude: ['password', 'qualification', 'doc_category'] },
+            where: whereCond,
+            order: [
+                ['id', 'DESC']
+            ],
+            limit: perPage,
+            offset: page,
+            paranoid: false
+        });
+        const totalPages = Math.ceil( patients.count / perPage );
+        if ( patients.count == 0 ) {
+            res.status(400);
+            throw new Error('No Patients found');
+        }
+        patients.total_pages = totalPages;
+        res.status(200).json({ status: true, message: 'Data Found', data: patients });
+    } catch(err) {
+        throw new Error(err);
+    }
+
+});
 
 module.exports = { prefetch, 
                     updateCurrentUser, 
@@ -493,5 +534,6 @@ module.exports = { prefetch,
                     updateDoctor,
                     deleteDoctor,
                     restoreDoctor,
-                    addPatient 
+                    addPatient,
+                    getPatients 
                 };

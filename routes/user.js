@@ -14,6 +14,6 @@ router.route('/updateDoctor/:id').put(ValidateToken, userController.updateDoctor
 router.route('/deleteDoctor/:id').delete(ValidateToken, userController.deleteDoctor);
 router.route('/restoreDoctor/:id').put(ValidateToken, userController.restoreDoctor);
 
-router.route('/patient').post(ValidateToken, userController.addPatient);
+router.route('/patient').post(ValidateToken, userController.addPatient).get(ValidateToken, userController.getPatients);
 
 module.exports = router;
