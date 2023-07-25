@@ -80,7 +80,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     doc_category: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: true
     },
     address: {
       type: DataTypes.STRING(1000),

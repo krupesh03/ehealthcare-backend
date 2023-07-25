@@ -409,6 +409,81 @@ const restoreDoctor = asyncHandler( async (req, res) => {
     }
 });
 
+/**
+ * @route POST /api/v1/user/patient
+ * @desc api to add patient
+ */
+const addPatient = asyncHandler( async (req, res) => {
+
+    const t = await db.sequelize.transaction();
+    try {
+        const { first_name, last_name, email, password,  cpassword, mobile_number, gender, blood_group, address } = req.body;
+        if( !first_name || !last_name || !email || !password || !gender || !blood_group ) {
+            res.status(400);
+            if( !first_name ) {
+                throw new Error('First name is mandatory');
+            }
+            if( !last_name ) {
+                throw new Error('Last name is mandatory');
+            }
+            if( !email ) {
+                throw new Error('Email is mandatory');
+            }
+            if( !password ) {
+                throw new Error('Password is mandatory');
+            }
+            if( !gender ) {
+                throw new Error('Gender is mandatory');
+            }
+            if( !blood_group ) {
+                throw new Error('Blood Group is mandatory');
+            }
+        }
+        if( !email.match(constants.emailValidateRegex) ) {
+            res.status(400);
+            throw new Error('Invalid Email address');
+        }
+        if( await User.findOne({ attributes: ['id'], where: { email: email } }) ) {
+            res.status(400);
+            throw new Error('Email address already exists');
+        }
+        if( password.length < 10 ) {
+            res.status(400);
+            throw new Error('Password length should not be less than 10 characters');
+        }
+        if( password !== cpassword ) {
+            res.status(400);
+            throw new Error('Password and confirm password does not match');
+        }
+        if( mobile_number ) {
+            res.status(400);
+            if( mobile_number.toString().length !== 10 || isNaN(mobile_number) ) {
+                throw new Error('Invalid Mobile number');
+            }
+            if( await User.findOne( { attributes: ['id'], where: { mobile_number: mobile_number} } ) ) {
+                throw new Error('Mobile number already exists');
+            }
+        }
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        const patient = await User.create({
+            first_name, last_name, email, password : hashedPassword, mobile_number, gender, user_type : constants.userType.PATIENT, blood_group, address, created_by : req.user.id, updated_by: req.user.id
+        });
+        patient.setDataValue('password', null);
+        t.commit();
+        res.status(200).json({ status: true, message: "Patient created successfully", data: patient });
+    } catch(err) {
+        t.rollback();
+        throw new Error(err);
+    }
+});
+
+/**
+ * @route GET /api/v1/user/patient
+ * @desc api to add patient
+ */
+//const getPatients 
+
 module.exports = { prefetch, 
                     updateCurrentUser, 
                     uploadProfilePic, 
@@ -417,5 +492,6 @@ module.exports = { prefetch,
                     getDoctor, 
                     updateDoctor,
                     deleteDoctor,
-                    restoreDoctor 
+                    restoreDoctor,
+                    addPatient 
                 };
