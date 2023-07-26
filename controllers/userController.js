@@ -480,7 +480,7 @@ const addPatient = asyncHandler( async (req, res) => {
 
 /**
  * @route GET /api/v1/user/patient
- * @desc api to add patient
+ * @desc api to get all patients
  */
 const getPatients = asyncHandler( async (req, res) => {
 
@@ -525,6 +525,92 @@ const getPatients = asyncHandler( async (req, res) => {
 
 });
 
+/**
+ * @route GET /api/v1/user/patient/:id
+ * @desc api to get specific patient
+ */
+const getPatient = asyncHandler( async (req, res) => {
+    try {
+        const patient = await User.findOne({
+            attributes: { exclude: ['password', 'qualification', 'doc_category'] },
+            where: {
+                id : req.params.id,
+                user_type : constants.userType.PATIENT,
+                is_admin: 0
+            }
+        });
+        if ( !patient ) {
+            res.status(400);
+            throw new Error('No Patient Found');
+        }
+        res.status(200).json({ status: true, message: 'Data Found', data: patient })
+
+    } catch(err){
+        throw new Error(err);
+    }
+});
+
+/**
+ * @route PUT /api/v1/user/patient/:id
+ * @desc api to update patient
+ */
+const updatePatient = asyncHandler( async (req, res) => {
+    const t = await db.sequelize.transaction();
+    try {
+        const { first_name, last_name, email, mobile_number, gender, blood_group, address } = req.body;
+        if( !first_name || !last_name || !email || !gender || !blood_group ) {
+            res.status(400);
+            if( !first_name ) {
+                throw new Error('First name is mandatory');
+            }
+            if( !last_name ) {
+                throw new Error('Last name is mandatory');
+            }
+            if( !email ) {
+                throw new Error('Email is mandatory');
+            }
+            if( !gender ) {
+                throw new Error('Gender is mandatory');
+            }
+            if( !blood_group ) {
+                throw new Error('Blood Group is mandatory');
+            }
+        }
+        if( !email.match(constants.emailValidateRegex) ) {
+            res.status(400);
+            throw new Error('Invalid email address');
+        }
+        if( await User.findOne({ attributes: ['id'], where: { email: email, id: { [Op.ne] : req.params.id } } }) ) {
+            res.status(400);
+            throw new Error('Email address already exists');
+        }
+        if( mobile_number ) {
+            if( mobile_number.toString().length !== 10 || isNaN(mobile_number) ) {
+                res.status(400);
+                throw new Error('Invalid Mobile number');
+            }
+            if( await User.findOne({ attributes: ['id'], where: { mobile_number: mobile_number, id: { [Op.ne] : req.params.id } } }) ) {
+                res.status(400);
+                throw new Error('Mobile number alreay exists');
+            }
+        }
+        const updateData = { first_name, last_name, email, mobile_number, gender, blood_group, address, updated_by: req.user.id };
+        const patient = await User.update(updateData, {
+            where: {
+                id: req.params.id,
+                user_type: constants.userType.PATIENT,
+                is_admin: 0
+            }
+        });
+        t.commit();
+        res.status(200).json({ status: true, message: 'Patient updated successfully', data : patient });
+
+    } catch( err ) {
+        t.rollback();
+        throw new Error(err);
+    }
+});
+
 module.exports = { prefetch, 
                     updateCurrentUser, 
                     uploadProfilePic, 
@@ -535,5 +621,7 @@ module.exports = { prefetch,
                     deleteDoctor,
                     restoreDoctor,
                     addPatient,
-                    getPatients 
+                    getPatients,
+                    getPatient,
+                    updatePatient 
                 };
