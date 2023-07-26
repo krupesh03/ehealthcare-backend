@@ -611,6 +611,76 @@ const updatePatient = asyncHandler( async (req, res) => {
     }
 });
 
+/**
+ * @route DELETE - api/v1/user/patient/:id
+ * @desc api to delete patient
+ */
+const deletePatient = asyncHandler( async (req, res) => {
+
+    const t = await db.sequelize.transaction();
+    try {
+        var whereCond = {
+            id: req.params.id,
+            is_admin: 0,
+            user_type: constants.userType.PATIENT
+        };
+        const patient = await User.findOne({
+            where: whereCond 
+        });
+        if( !patient ) {
+            res.status(400);
+            throw new Error('Patient does not exist');
+        }
+        const deletePatient = await User.destroy({
+            where: whereCond
+        });
+        t.commit();
+        res.status(200).json({ status: true, message: 'Patient deactivated successfully', data: deletePatient });
+
+    } catch(err) {
+        t.rollback();
+        throw new Error(err);
+    }
+});
+
+/**
+ * @route PUT - api/v1/user/patient/:id
+ * @desc api to restore patient
+ */
+const restorePatient = asyncHandler( async (req, res) => {
+
+    const t = await db.sequelize.transaction();
+    try {
+        var whereCond = {
+            id: req.params.id,
+            is_admin: 0,
+            user_type: constants.userType.PATIENT
+        }
+        const patient = await User.findOne({
+            attributes: ['deletedAt'],
+            where: whereCond,
+            paranoid: false
+        });
+        if( !patient ) {
+            res.status(400);
+            throw new Error('Patient does not exist');
+        }
+        if( !patient.deletedAt ) {
+            res.status(400);
+            throw new Error('Patient is not deactivated');
+        }
+        const restorePatient = await User.restore({
+            where: whereCond
+        });
+        t.commit();
+        res.status(200).json({ status: true, message: 'Patient activated successfully', data: restorePatient });
+
+    } catch(err) {
+        t.rollback();
+        throw new Error(err);
+    }
+});
+
 module.exports = { prefetch, 
                     updateCurrentUser, 
                     uploadProfilePic, 
@@ -623,5 +693,7 @@ module.exports = { prefetch,
                     addPatient,
                     getPatients,
                     getPatient,
-                    updatePatient 
+                    updatePatient,
+                    deletePatient,
+                    restorePatient 
                 };

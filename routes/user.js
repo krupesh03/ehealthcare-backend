@@ -15,6 +15,7 @@ router.route('/deleteDoctor/:id').delete(ValidateToken, userController.deleteDoc
 router.route('/restoreDoctor/:id').put(ValidateToken, userController.restoreDoctor);
 
 router.route('/patient').post(ValidateToken, userController.addPatient).get(ValidateToken, userController.getPatients);
-router.route('/patient/:id').get(ValidateToken, userController.getPatient).put(ValidateToken, userController.updatePatient);
+router.route('/patient/:id').get(ValidateToken, userController.getPatient).put(ValidateToken, userController.updatePatient).delete(ValidateToken, userController.deletePatient);
+router.route('/rpatient/:id').put(ValidateToken, userController.restorePatient);
 
 module.exports = router;
