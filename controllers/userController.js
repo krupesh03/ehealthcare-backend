@@ -488,9 +488,10 @@ const getPatients = asyncHandler( async (req, res) => {
         const perPage = Number(req.query.per_page);
         var page = req.query.page ? Number(req.query.page) - 1 : 0;
         page = perPage * page;
-        const searchQuery = req.query.search_query;
+        var searchQuery = req.query.search_query;
         var whereCond = {};
         if ( searchQuery ) {
+            searchQuery = searchQuery.trim();
             whereCond = {
                 [Op.or] : [
                     { first_name : { [Op.like] : `%${searchQuery}%` } },
