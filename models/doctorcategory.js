@@ -11,6 +11,10 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      models.DoctorCategory.hasOne(models.User, {
+        foreignKey: 'doc_category',
+        as: 'doctorCategoryDetails'
+      });
     }
   }
   DoctorCategory.init({

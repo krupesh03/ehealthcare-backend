@@ -11,22 +11,19 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      models.Qualifications.hasOne(models.User, {
-        foreignKey: 'qualification',
-        as: 'qualificationDetails'
-      });
       models.User.belongsTo(models.Qualifications, {
         foreignKey: 'qualification',
         as: 'qualificationDetails'
       });
 
-      models.DoctorCategory.hasOne(models.User, {
-        foreignKey: 'doc_category',
-        as: 'doctorCategoryDetails'
-      });
       models.User.belongsTo(models.DoctorCategory, {
         foreignKey: 'doc_category',
         as: 'doctorCategoryDetails'
+      });
+
+      User.Patient = models.User.hasOne(models.PatientAdmissions, {
+        foreignKey: 'patient_id',
+        as: 'patient_admissions'
       });
     }
   }
