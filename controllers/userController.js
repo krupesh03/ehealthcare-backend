@@ -9,6 +9,7 @@ const Gender = db.Gender;
 const User = db.User;
 const Qualifications = db.Qualifications;
 const DoctorCategory = db.DoctorCategory;
+const PatientAdmissions = db.PatientAdmissions;
 
 /**
  * @route GET /api/v1/user/prefetch 
@@ -418,7 +419,7 @@ const addPatient = asyncHandler( async (req, res) => {
     const t = await db.sequelize.transaction();
     try {
         const { first_name, last_name, email, password,  cpassword, mobile_number, gender, blood_group, address, admission_date } = req.body;
-        if( !first_name || !last_name || !email || !password || !gender || !blood_group ) {
+        if( !first_name || !last_name || !email || !password || !gender || !blood_group || !admission_date ) {
             res.status(400);
             if( !first_name ) {
                 throw new Error('First name is mandatory');
@@ -437,6 +438,9 @@ const addPatient = asyncHandler( async (req, res) => {
             }
             if( !blood_group ) {
                 throw new Error('Blood Group is mandatory');
+            }
+            if( !admission_date ) {
+                throw new Error('Admission date is mandatory');
             }
         }
         if( !email.match(constants.emailValidateRegex) ) {
@@ -464,11 +468,9 @@ const addPatient = asyncHandler( async (req, res) => {
                 throw new Error('Mobile number already exists');
             }
         }
-        if( admission_date ) {
+        if( new Date(admission_date).getTime() > new Date().getTime() ) {
             res.status(400);
-            if( new Date(admission_date).getTime() > new Date().getTime() ) {
-                throw new Error('Admission date cannot be greater than current date');
-            }
+            throw new Error('Admission date cannot be greater than current date');
         }
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
@@ -517,6 +519,11 @@ const getPatients = asyncHandler( async (req, res) => {
         const patients = await User.findAndCountAll({
             attributes: { exclude: ['password', 'qualification', 'doc_category'] },
             where: whereCond,
+            include:[{
+                model: PatientAdmissions,
+                as: 'patient_admissions',
+                attributes: ['id', 'patient_id', 'admission_date']
+            }],
             order: [
                 ['id', 'DESC']
             ],
@@ -549,7 +556,12 @@ const getPatient = asyncHandler( async (req, res) => {
                 id : req.params.id,
                 user_type : constants.userType.PATIENT,
                 is_admin: 0
-            }
+            },
+            include: [{
+                model: PatientAdmissions,
+                as: 'patient_admissions',
+                attributes: ['id', 'patient_id', 'admission_date']
+            }]
         });
         if ( !patient ) {
             res.status(400);
@@ -569,8 +581,8 @@ const getPatient = asyncHandler( async (req, res) => {
 const updatePatient = asyncHandler( async (req, res) => {
     const t = await db.sequelize.transaction();
     try {
-        const { first_name, last_name, email, mobile_number, gender, blood_group, address } = req.body;
-        if( !first_name || !last_name || !email || !gender || !blood_group ) {
+        const { first_name, last_name, email, mobile_number, gender, blood_group, address, admission_date } = req.body;
+        if( !first_name || !last_name || !email || !gender || !blood_group || !admission_date ) {
             res.status(400);
             if( !first_name ) {
                 throw new Error('First name is mandatory');
@@ -586,6 +598,9 @@ const updatePatient = asyncHandler( async (req, res) => {
             }
             if( !blood_group ) {
                 throw new Error('Blood Group is mandatory');
+            }
+            if( !admission_date ) {
+                throw new Error('Admission date is mandatory');
             }
         }
         if( !email.match(constants.emailValidateRegex) ) {
@@ -606,6 +621,10 @@ const updatePatient = asyncHandler( async (req, res) => {
                 throw new Error('Mobile number alreay exists');
             }
         }
+        if( new Date(admission_date).getTime() > new Date().getTime() ) {
+            res.status(400);
+            throw new Error('Admission date cannot be greater than current date');
+        }
         const updateData = { first_name, last_name, email, mobile_number, gender, blood_group, address, updated_by: req.user.id };
         const patient = await User.update(updateData, {
             where: {
@@ -614,6 +633,24 @@ const updatePatient = asyncHandler( async (req, res) => {
                 is_admin: 0
             }
         });
+        const patientAdmissionDate = await PatientAdmissions.findOne({
+            attributes: ['admission_date'],
+            where: {
+                patient_id: req.params.id,
+                admission_date: admission_date
+            }
+        });
+        if( !patientAdmissionDate ) {
+            await PatientAdmissions.destroy({
+                where: {
+                    patient_id: req.params.id
+                }
+            });
+            await PatientAdmissions.create({
+                patient_id: req.params.id,
+                admission_date: admission_date
+            });
+        }
         t.commit();
         res.status(200).json({ status: true, message: 'Patient updated successfully', data : patient });
 
