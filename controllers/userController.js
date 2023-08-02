@@ -442,7 +442,7 @@ const addPatient = asyncHandler( async (req, res) => {
 
     const t = await db.sequelize.transaction();
     try {
-        const { first_name, last_name, email, password,  cpassword, mobile_number, gender, blood_group, address, admission_date } = req.body;
+        const { first_name, last_name, email, password,  cpassword, mobile_number, birth_date, age, gender, blood_group, address, admission_date } = req.body;
         if( !first_name || !last_name || !email || !password || !gender || !blood_group || !admission_date ) {
             res.status(400);
             if( !first_name ) {
@@ -496,10 +496,22 @@ const addPatient = asyncHandler( async (req, res) => {
             res.status(400);
             throw new Error('Admission date cannot be greater than current date');
         }
+        if( birth_date ) {
+            if( new Date(birth_date).getTime() > new Date().getTime() ) {
+                res.status(400);
+                throw new Error('Invalid Birth date');
+            }
+        }
+        if( age ) {
+            if( isNaN(age) ) {
+                res.status(400);
+                throw new Error('Invalid Age');
+            }
+        }
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
         const patient = await User.create({
-            first_name, last_name, email, password : hashedPassword, mobile_number, gender, user_type : constants.userType.PATIENT, blood_group, address, created_by : req.user.id, updated_by: req.user.id,
+            first_name, last_name, email, password : hashedPassword, mobile_number, birth_date, age, gender, user_type : constants.userType.PATIENT, blood_group, address, created_by : req.user.id, updated_by: req.user.id,
             patient_admissions: {
                 admission_date
             }
@@ -605,7 +617,7 @@ const getPatient = asyncHandler( async (req, res) => {
 const updatePatient = asyncHandler( async (req, res) => {
     const t = await db.sequelize.transaction();
     try {
-        const { first_name, last_name, email, mobile_number, gender, blood_group, address, admission_date } = req.body;
+        const { first_name, last_name, email, mobile_number, birth_date, age, gender, blood_group, address, admission_date } = req.body;
         if( !first_name || !last_name || !email || !gender || !blood_group || !admission_date ) {
             res.status(400);
             if( !first_name ) {
@@ -649,7 +661,19 @@ const updatePatient = asyncHandler( async (req, res) => {
             res.status(400);
             throw new Error('Admission date cannot be greater than current date');
         }
-        const updateData = { first_name, last_name, email, mobile_number, gender, blood_group, address, updated_by: req.user.id };
+        if( birth_date ) {
+            if( new Date(birth_date).getTime() > new Date().getTime() ) {
+                res.status(400);
+                throw new Error('Invalid Birth date');
+            }
+        }
+        if( age ) {
+            if( isNaN(age) ) {
+                res.status(400);
+                throw new Error('Invalid Age');
+            }
+        }
+        const updateData = { first_name, last_name, email, mobile_number, birth_date, age, gender, blood_group, address, updated_by: req.user.id };
         const patient = await User.update(updateData, {
             where: {
                 id: req.params.id,
