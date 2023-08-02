@@ -115,7 +115,7 @@ const uploadProfilePic = asyncHandler( async (req, res) => {
 const addDoctor = asyncHandler (async (req, res) => {
     const t = await db.sequelize.transaction();
     try {
-        const { first_name, last_name, email, password, cpassword, mobile_number, gender, blood_group, qualification, doc_category, address } = req.body;
+        const { first_name, last_name, email, password, cpassword, mobile_number, birth_date, age, gender, blood_group, qualification, doc_category, address } = req.body;
         if( !first_name || !last_name || !email || !password || !mobile_number || !gender || !qualification || !doc_category ) {
             res.status(400);
             if( !first_name ) {
@@ -167,10 +167,22 @@ const addDoctor = asyncHandler (async (req, res) => {
             res.status(400);
             throw new Error('Mobile number already exists')
         }
+        if( birth_date ) {
+            if( new Date(birth_date).getTime() > new Date().getTime() ) {
+                res.status(400);
+                throw new Error('Invalid Birth Date');
+            }
+        }
+        if( age ) {
+            if( isNaN(age) ) {
+                res.status(400);
+                throw new Error('Invalid age');
+            }
+        }
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
         const postData = {
-            first_name, last_name, email, password : hashedPassword, mobile_number, gender, user_type : constants.userType.DOCTOR, blood_group, qualification, doc_category, address, created_by : req.user.id, updated_by: req.user.id 
+            first_name, last_name, email, password : hashedPassword, mobile_number, birth_date, age, gender, user_type : constants.userType.DOCTOR, blood_group, qualification, doc_category, address, created_by : req.user.id, updated_by: req.user.id 
         }
         const doctor = await User.create(postData);
         doctor.setDataValue('password', null);
@@ -206,7 +218,7 @@ const getDoctors = asyncHandler( async (req, res) => {
         whereCond.user_type = constants.userType.DOCTOR;
         whereCond.is_admin = 0;
         const doctors = await User.findAndCountAll({
-            attributes: ['id', 'first_name', 'last_name', 'profile_picture', 'email', 'mobile_number', 'gender', 'user_type', 'blood_group', 'qualification', 'doc_category', 'address', 'createdAt', 'updatedAt', 'deletedAt'],
+            attributes: ['id', 'first_name', 'last_name', 'profile_picture', 'email', 'mobile_number', 'birth_date', 'age', 'gender', 'user_type', 'blood_group', 'qualification', 'doc_category', 'address', 'createdAt', 'updatedAt', 'deletedAt'],
             include: [{
                 model: Qualifications,
                 required: true, //to make inner join
@@ -245,7 +257,7 @@ const getDoctors = asyncHandler( async (req, res) => {
 const getDoctor = asyncHandler( async (req, res) => {
     try {
         const doctor = await User.findOne({
-            attributes: ['id', 'first_name', 'last_name', 'profile_picture', 'email', 'mobile_number', 'gender', 'blood_group', 'qualification', 'doc_category', 'address', 'createdAt','updatedAt', 'deletedAt'],
+            attributes: ['id', 'first_name', 'last_name', 'profile_picture', 'email', 'mobile_number', 'birth_date', 'age', 'gender', 'blood_group', 'qualification', 'doc_category', 'address', 'createdAt','updatedAt', 'deletedAt'],
             include: [{
                 model: Qualifications,
                 as: 'qualificationDetails',
@@ -281,7 +293,7 @@ const getDoctor = asyncHandler( async (req, res) => {
 const updateDoctor = asyncHandler( async (req, res) => {
     const t = await db.sequelize.transaction();
     try {
-        const { first_name, last_name, email, mobile_number, gender, blood_group, qualification, doc_category, address } = req.body;
+        const { first_name, last_name, email, mobile_number, birth_date, age, gender, blood_group, qualification, doc_category, address } = req.body;
         if( !first_name || !last_name || !email || !mobile_number || !gender || !qualification || !doc_category ) {
             res.status(400);
             if( !first_name ) {
@@ -322,7 +334,19 @@ const updateDoctor = asyncHandler( async (req, res) => {
             res.status(400);
             throw new Error('Mobile number already exists')
         }
-        const updateData = { first_name, last_name, email, mobile_number, gender, blood_group, qualification, doc_category, address, updated_by: req.user.id };
+        if( birth_date ) {
+            if( new Date(birth_date).getTime() > new Date().getTime() ) {
+                res.status(400);
+                throw new Error('Invalid Birth date');
+            }
+        }
+        if( age ) {
+            if( isNaN(age) ) {
+                res.status(400);
+                throw new Error('Invalid age');
+            }
+        }
+        const updateData = { first_name, last_name, email, mobile_number, birth_date, age, gender, blood_group, qualification, doc_category, address, updated_by: req.user.id };
         const doctor = await User.update(updateData, {
             where: {
                 id: req.params.id,

@@ -54,6 +54,28 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       unique: true
     },
+    birth_date: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+      set(value) { 
+        if( !value ) {
+          this.setDataValue('birth_date', null);
+        } else {
+          this.setDataValue('birth_date', value);
+        }
+      }
+    },
+    age: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      set(value) {
+        if( !value ) {
+          this.setDataValue('age', null);
+        } else {
+          this.setDataValue('age', value);
+        }
+      }
+    },
     gender: {
       type: DataTypes.TEXT('tiny'),
       allowNull: false,
