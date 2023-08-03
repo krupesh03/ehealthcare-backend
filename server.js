@@ -14,6 +14,7 @@ app.use(express.static('public'));
 app.use('/uploads', express.static('uploads')); //to display images in browser
 app.use('/api/v1/auth/', require('./routes/auth.js'));
 app.use('/api/v1/user/', require('./routes/user.js'));
+app.use('/api/v1/dashboard/', require('./routes/dashboard.js'));
 app.use(validateRoute);
 app.use(errorHandler);
 app.listen(port, () => {
