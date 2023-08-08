@@ -4,6 +4,7 @@ const { QueryTypes } = db.Sequelize;
 const User = db.User;
 const Qualifications = db.Qualifications;
 const constants = require('../constants/constants');
+const { Op } = db.Sequelize;
 
 /**
  * @route GET - api/v1/dashboard
@@ -38,7 +39,11 @@ const dashboardData = asyncHandler( async (req, res) => {
             attributes: ['qualification', [db.sequelize.fn('COUNT', db.sequelize.col('qualification')), 'doc_cnt']],
             where: {
                 user_type: constants.userType.DOCTOR,
-                is_admin: 0
+                is_admin: 0,
+                [Op.and] : [
+                    db.sequelize.where(db.sequelize.fn('YEAR', db.sequelize.col('User.createdAt')), { [Op.eq] : year }),
+                    db.sequelize.where(db.sequelize.fn('MONTH', db.sequelize.col('User.createdAt')), { [Op.eq] : month })
+                ]
             },
             include: [{
                 model: Qualifications,
@@ -49,14 +54,14 @@ const dashboardData = asyncHandler( async (req, res) => {
             group: 'qualification'
         });
 
-        const categoryData = await db.sequelize.query(`SELECT u.doc_category, COUNT(u.doc_category) AS doc_cnt, d.key FROM users u INNER JOIN doctorcategories d ON u.doc_category = d.id AND ( d.deletedAt IS NULL ) WHERE ( u.deletedAt IS NULL AND ( u.user_type = ? AND u.is_admin = 0 )) GROUP BY doc_category`, {
-            replacements: [constants.userType.DOCTOR],
+        const categoryData = await db.sequelize.query(`SELECT u.doc_category, COUNT(u.doc_category) AS doc_cnt, d.key FROM users u INNER JOIN doctorcategories d ON u.doc_category = d.id AND ( d.deletedAt IS NULL ) WHERE ( u.deletedAt IS NULL AND ( u.user_type = ? AND u.is_admin = 0 )) AND YEAR(u.createdAt) = ? AND MONTH(u.createdAt) = ? GROUP BY doc_category`, {
+            replacements: [constants.userType.DOCTOR, year, month],
             raw: false,
             type: QueryTypes.SELECT
         });
 
-        const genderData = await db.sequelize.query(`select user_type, gender, count(gender) as user_count from users where YEAR(createdAt) = ? and deletedAt is null group by user_type, gender order by user_type, gender DESC`, {
-            replacements: [year],
+        const genderData = await db.sequelize.query(`select user_type, gender, count(gender) as user_count from users where YEAR(createdAt) = ? and deletedAt is null and MONTH(createdAt) = ? group by user_type, gender order by user_type, gender DESC`, {
+            replacements: [year, month],
             raw: false,
             type: QueryTypes.SELECT
         });
