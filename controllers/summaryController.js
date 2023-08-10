@@ -49,12 +49,12 @@ const dashboardData = asyncHandler( async (req, res) => {
                 model: Qualifications,
                 as: 'qualificationDetails',
                 required: true,
-                attributes: ['key']
+                attributes: ['key', 'value']
             }],
             group: 'qualification'
         });
 
-        const categoryData = await db.sequelize.query(`SELECT u.doc_category, COUNT(u.doc_category) AS doc_cnt, d.key FROM users u INNER JOIN doctorcategories d ON u.doc_category = d.id AND ( d.deletedAt IS NULL ) WHERE ( u.deletedAt IS NULL AND ( u.user_type = ? AND u.is_admin = 0 )) AND YEAR(u.createdAt) = ? AND MONTH(u.createdAt) = ? GROUP BY doc_category`, {
+        const categoryData = await db.sequelize.query(`SELECT u.doc_category, COUNT(u.doc_category) AS doc_cnt, d.key, d.value FROM users u INNER JOIN doctorcategories d ON u.doc_category = d.id AND ( d.deletedAt IS NULL ) WHERE ( u.deletedAt IS NULL AND ( u.user_type = ? AND u.is_admin = 0 )) AND YEAR(u.createdAt) = ? AND MONTH(u.createdAt) = ? GROUP BY doc_category`, {
             replacements: [constants.userType.DOCTOR, year, month],
             raw: false,
             type: QueryTypes.SELECT
