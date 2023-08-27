@@ -2,3 +2,7 @@ sequelize model:generate --name Post --attributes title:string,content:text
 npx sequelize-cli init
 npx sequelize-cli migration:generate --name add_gender_to_users
 npx sequelize-cli db:seed --seed 20230714163426-blood-groups
+npx sequelize-cli seed:generate --name demo-user
+npx sequelize-cli db:seed:all
+npx sequelize-cli db:migrate:undo
+npx sequelize-cli db:migrate
