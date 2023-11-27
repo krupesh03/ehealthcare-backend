@@ -25,7 +25,8 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'BloodGroups',
-    paranoid: true,
+    paranoid: true, //soft delete
+    //deletedAt: 'deleted_at'
   });
   return BloodGroups;
 };
